@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
@@ -151,3 +152,55 @@ namespace KBC
         }
     }
 }
+
+
+/*Create class for question answer
+Element
+Question
+Answer (A1, A2,A3, A4)
+Correct Answer
+Difficulty
+
+class of lifeline
+{
+Enum of lifeline
+Message 
+used
+}
+
+start program 
+question list
+lifeline
+
+user class
+{
+user question class list 
+}
+
+
+user question class
+{
+question obj
+answer
+
+}
+
+
+Start
+Function
+Parameter(Start Boolean, Question =null(default), Lifeline(default)
+
+if(start true)
+{
+Print about kbc
+question and price money
+i - 1000 Rs.
+
+if user say start
+
+
+
+}
+
+
+*/
