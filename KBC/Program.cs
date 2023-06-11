@@ -1,9 +1,12 @@
-﻿using System;
+﻿using KBC.Class;
+using KBC.Enum;
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,143 +15,103 @@ namespace KBC
 {
     class Program
     {
-        public static List<Questions> questions;
-        public static int points = 0;
-        public static bool ExpertUsed = false;
-        public static bool FiftyFiftyUsed = false;
+        static List<Questions> QuestionsList;
+        static User UserInfo;
+        static List<UserQuestions> UserQuestionsList = new List<UserQuestions>();
 
         static void Main(string[] args)
         {
-            Console.WriteLine("----------------------Welcome to the KBC----------------------");
-            Console.WriteLine("There is 4 options (a, b, c, d) you can press 'e' for Expert Advice and 'f' for Fifty-fifty Life line");
-            StoreData();
+            Start(IsStart: true);
+            QuestionsList = Questions.StoreQuestion();
 
-            for (int i = 1; i <= 3; i++)
+            for (int i = 1; i <= 15; i++)
             {
-                Console.WriteLine($"Your {i} quesction is:.............");
-                Questions ques = GetQuestion();
-                Console.WriteLine($"Q{i}: {ques.Question}");
-
-                foreach (KeyValuePair<string, string> option in ques.Options)
+                Random random = new Random();
+                List<Questions> QuesList = QuestionsList.Where(x => x.Difficulty == (i <= 5 ? 1 : (i > 10 ? 3 : 2))).ToList();
+                int ran = random.Next(0, QuesList.Count());
+                Questions Ques = QuesList[ran];
+                QuestionsList.Remove(Ques);
+                if (!Start(Question: Ques, QuestionNo: i))
                 {
-                    Console.Write($"{option.Key}: {option.Value}" + (option.Key == "d" ? "" : ", "));
+                    break;
                 }
+            }
 
-            GetInput:
-                Console.WriteLine();
-                Console.Write("Your ans: ");
-                string UserAns = Console.ReadLine();
+            Console.WriteLine($"Congratulation {UserInfo.Name}, You won the price money of Rs.{UserInfo.MoneyWon}");
+            Console.WriteLine("Press any key to claim your reward");
+            Console.ReadLine();
+        }
 
-                switch (UserAns)
+        static bool Start(string Lifeline = null, bool IsStart = false, Questions Question = null, int QuestionNo = 0)
+        {
+            if (IsStart)
+            {
+                Console.WriteLine("----------------------Welcome to the C# KBC----------------------");
+                Console.Write("Please enter you name: ");
+                string UserName = Console.ReadLine();
+                UserInfo = new User();
+                UserInfo.Name = UserName;
+                Console.WriteLine($"Hii {UserInfo.Name}, There are 4 options (a, b, c, d) you can press 'e' for Expert Advice and 'f' for Fifty-fifty Lifeline");
+                Console.WriteLine("Press enter to continue: ");
+                Console.ReadLine();
+                Console.Clear();
+                return true;
+            }
+
+            if (Question != null)
+            {
+                Console.WriteLine($"Q{QuestionNo}: " + Question.Question);
+                Console.WriteLine("a: " + Question.Option1);
+                Console.WriteLine("b: " + Question.Option2);
+                Console.WriteLine("c: " + Question.Option3);
+                Console.WriteLine("d: " + Question.Option4);
+                string UserInput = Console.ReadLine();
+                switch (UserInput)
                 {
+                    case "exit":
+                        Console.Clear();
+                        Console.WriteLine($"Ok, KBC permit you to exit the game, you won th price money of Rs.{UserInfo.TempMoneyWon}");
+                        Console.ReadLine();
+                        return false;
                     case "e":
-                        Console.WriteLine(ExpertAdvice(ques.Ans));
-                        goto GetInput;
+                        Console.WriteLine("Expert advice");
+                        Console.Clear();
+                        Start(Question: Question, QuestionNo: QuestionNo);
+                        return true;
                     case "f":
-                        Console.WriteLine(FiftyFifty(ques.Options, ques.Ans));
-                        goto GetInput;
+                        Console.WriteLine("Fifty-Fifty");
+                        Console.Clear();
+                        Start(Question: Question, QuestionNo: QuestionNo);
+                        return true;
                     case "a":
                     case "b":
                     case "c":
                     case "d":
-                        if (!CheckAns(UserAns, ques.Ans, i * 10))
+                        UserQuestionsList.Add(new UserQuestions(Question, UserInput));
+                        if (Question.Ans == UserInput)
                         {
-                            goto exit_loop;
+                            UserInfo.TempMoneyWon = MoneyPrice.Prices[QuestionNo];
+                            if (QuestionNo % 5 == 0)
+                            {
+                                UserInfo.MoneyWon = MoneyPrice.Prices[QuestionNo];
+                            }
+                            Console.WriteLine($"Congrats {UserInfo.Name}, your answer is right, you won {UserInfo.TempMoneyWon}. Press enter to continue");
+                            Console.ReadLine();
+                            Console.Clear();
+                            return true;
                         }
-                        break;
+                        Console.WriteLine($"Oops, your answer is wrong. You rewarded with Rs.{UserInfo.MoneyWon} Press enter to continue");
+                        Console.ReadLine();
+                        Console.Clear();
+                        return false;
                     default:
-                        Console.WriteLine("Please enter write input");
-                        goto GetInput;
+                        Console.Clear();
+                        Console.WriteLine("Please enter right input");
+                        Start(Question: Question, QuestionNo: QuestionNo);
+                        return true;
                 }
             }
-
-        exit_loop:
-            Console.WriteLine($"You earn {points}, Press any key to exit");
-            Console.ReadLine();
-        }
-
-        static void StoreData()
-        {
-            questions = new List<Questions>();
-            questions.Add(new Questions("Who is the father of C language?", new Dictionary<string, string>() { { "a", "Steve Jobs" }, { "b", "James Gosling" }, { "c", "Dennis Ritchie" }, { "d", "Rasmus Lerdorf" } }, "b"));
-            questions.Add(new Questions("Which of the following is not a valid C variable name?", new Dictionary<string, string>() { { "a", "int number;" }, { "b", "float rate;" }, { "c", "int variable_count;" }, { "d", "int $main;" } }, "d"));
-            questions.Add(new Questions("Which of the following cannot be a variable name in C?", new Dictionary<string, string>() { { "a", "volatile" }, { "b", "true" }, { "c", "friend" }, { "d", "export" } }, "a"));
-            questions.Add(new Questions("What is an example of iteration in C?", new Dictionary<string, string>() { { "a", "for" }, { "b", "while" }, { "c", "do-while" }, { "d", "all of the mentioned" } }, "d"));
-            questions.Add(new Questions("Functions can return enumeration constants in C?", new Dictionary<string, string>() { { "a", "true" }, { "b", "false" }, { "c", "depends on the compiler" }, { "d", "depends on the standard" } }, "a"));
-        }
-
-        static Questions GetQuestion()
-        {
-            Random random = new Random();
-            int ran = random.Next(1, 5);
-
-            return questions[ran];
-        }
-
-        static string ExpertAdvice(string Ans)
-        {
-            if (!ExpertUsed)
-            {
-                ExpertUsed = true;
-                return $"I think the ans is {Ans}";
-            }
-            else
-            {
-                return "You cannot use it now";
-            }
-        }
-
-        static bool CheckAns(string UserAns, string Ans, int Points)
-        {
-            if (UserAns == Ans)
-            {
-                points += Points;
-                Console.WriteLine($"Congrats, your ans is correct, total points: {points}");
-                Console.WriteLine("--------------------------------------------------------------------------------------------------------------------------------");
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Oops, your ans is wrong. Press any key to exit");
-                Console.WriteLine("--------------------------------------------------------------------------------------------------------------------------------");
-                Console.ReadLine();
-                return false;
-            }
-        }
-
-        static string FiftyFifty(Dictionary<string, string> Options, string Ans)
-        {
-            if (!FiftyFiftyUsed)
-            {
-                FiftyFiftyUsed = true;
-                string options = $"{Ans}: {Options[Ans]}";
-                Options.Remove(Ans);
-                List<string> keyList = new List<string>(Options.Keys);
-                Random random = new Random();
-                int ran = random.Next(0, 2);
-                options += $", {keyList[ran]}: {Options[keyList[ran]]}";
-
-                return options;
-            }
-            else
-            {
-                return "You cannot use it now";
-            }
-
-        }
-    }
-
-    public class Questions
-    {
-        public string Question { get; set; }
-        public Dictionary<string, string> Options { get; set; }
-        public string Ans { get; set; }
-
-        public Questions(string question, Dictionary<string, string> options, string ans)
-        {
-            this.Question = question;
-            this.Options = options;
-            this.Ans = ans;
+            return false;
         }
     }
 }
